@@ -11,7 +11,7 @@
 % λ-NFA format in Prolog
 % graph represented by a list of edges where each edge has following structure: 
 % edge(FromNode, ToNode, Symbol)
-% Last node (with the hgihest number) is the final state
+% Last node (with the highest number) is the final state
 
 % λ-NFA example
 % iter(and(0, 1))
@@ -54,8 +54,15 @@ regex2NFARecursive(Symbol, PrevNode, NewNode, Acc, Result) :-
 regex2NFA(Expression, Result) :-
     regex2NFARecursive(Expression, 0, _, [], Result).
 
-nfa2Regex([edge(_,_,Regex)], Regex).
-% in list, the order does not matter
+
+% NFA preconditions:
+% valid NFA
+% single input state
+% single final state
+% no unreachable states
+nfa2Regex([edge(S,E,Regex)], S, E, Regex).
+% the order of edges in a list should not matter
+
 
 getPairs(List1, List2, Pairs) :-
     findall((A,B), (member(A, List1), member(B, List2)), Pairs).
