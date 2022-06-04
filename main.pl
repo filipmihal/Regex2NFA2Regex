@@ -1,5 +1,3 @@
-% TODO: Fix non-determinism for regex2NFA
-
 % REGEX format in Prolog
 % R+S = or(R,S)
 % RS = and(R,S)
@@ -52,22 +50,84 @@ regex2NFARecursive(Symbol, PrevNode, NewNode, Acc, Result) :-
 
 % regex2NFA(+Expression, -Result) 
 regex2NFA(Expression, Result) :-
-    regex2NFARecursive(Expression, 0, _, [], Result).
+    regex2NFARecursive(Expression, 0, _, [], Result), !.
 
+% Can be simplified using findall
+findInsOuts(Node, [], AccIn, AccOut, Node-AccIn-AccOut) :- !.
+findInsOuts(Node, [edge(From, To, _)|RestEdges], AccIn, AccOut, Result) :-
+    From = Node, To \= Node, findInsOuts(Node, RestEdges, AccIn, [To|AccOut], Result), !.
+findInsOuts(Node, [edge(From, To, _)|RestEdges], AccIn, AccOut, Result) :-
+    From \= Node, To = Node, findInsOuts(Node, RestEdges, [From|AccIn], AccOut, Result), !.
+findInsOuts(Node, [_|RestEdges], AccIn, AccOut, Result) :-
+    findInsOuts(Node, RestEdges, AccIn, AccOut, Result).
+
+containsNode(Node, edge(_, Node,_)) :- !.
+containsNode(Node, edge(Node, _,_)).
+
+isEdgeInPairs(Pairs, edge(From, To, _)) :-
+    select((From, To), Pairs, _).
+
+deleteEdges(Node, Pairs, Edges, NewEdges) :-
+    exclude(containsNode(Node), Edges, ExEdges),
+    exclude(isEdgeInPairs(Pairs), ExEdges, NewEdges).
+
+cutNode(Edges, StartNode, _, Result) :-
+    select(edge(From, _, _), Edges, _), From \== StartNode,
+    findInsOuts(From, Edges, [], [], Node-In-Out),
+    constructNewEdges(Edges, Node-In-Out, NewEdges, Pairs),
+    deleteEdges(Node, Pairs, Edges, StrippedEdges),
+    append(StrippedEdges, NewEdges, Result).
+
+nfa2Regex([edge(S,F,Exp)], S, F, Exp).
+nfa2Regex(Edges,S,F,Exp) :-
+    cutNode(Edges,S,F,NewEdges),
+    nfa2Regex(NewEdges, S,F,Exp).
 
 % NFA preconditions:
 % valid NFA
 % single input state
 % single final state
 % no unreachable states
-nfa2Regex([edge(S,E,Regex)], S, E, Regex).
+% nfa2Regex([edge(S,E,Regex)], S, E, Regex).
 % the order of edges in a list should not matter
 
+eachPairRev(_, [], []):- !.
+eachPairRev(Node, [A|Rest], [(Node,A)|Pairs]) :-
+    eachPairRev(Node, Rest, Pairs).
+        
+eachPair([], _, []).
+eachPair([A|Rest], List, Pairs) :-
+    eachPairRev(A,List, APairs), eachPair(Rest, List, RestPairs), append(APairs, RestPairs, Pairs).
 
-getPairs(List1, List2, Pairs) :-
-    findall((A,B), (member(A, List1), member(B, List2)), Pairs).
+constructNewEdges(Edges, Node-Ins-Outs,NewEdges, Pairs):-
+    (select(edge(Node, Node, LoopExp), Edges, _); LoopExp = nil),!,
+    eachPair(Ins, Outs, Pairs), maplist(newRegexEdge(Node, LoopExp, Edges), Pairs, NewEdges).
+
+newRegex(FromExp, ToExp, nil, nil, Result):-
+    beautifyAnd(FromExp, ToExp, Result),!.
+newRegex(FromExp, ToExp, nil, ExistingExp, Result):-
+beautifyAnd(FromExp, ToExp, AndResult),
+    Result = or(AndResult,ExistingExp), !.
+newRegex(FromExp, ToExp, LoopExp, nil, Result):-
+    beautifyIter(LoopExp, Iter),
+    beautifyAnd(Iter, ToExp, AndRes),
+    beautifyAnd(FromExp, AndRes, Result), !.
+newRegex(FromExp, ToExp, LoopExp, ExistingExp, or(AndRes2, ExistingExp)):-
+    beautifyIter(LoopExp, Iter),
+    beautifyAnd(Iter, ToExp, AndRes),
+    beautifyAnd(FromExp, AndRes, AndRes2), !.
 
 
-% DS from which I can remove 1st level elements, edit and add 2nd level elements
-% ripOutState(INs, OUTs, SelfEdge, Result) :-
-%         e(From, _, Symbol1) 
+newRegexEdge(Node, LoopExp, Edges, (From, To), edge(From, To, NewExp)) :-
+    select(edge(From, Node, FromExp), Edges, NewEdges), 
+    select(edge(Node, To, ToExp), NewEdges, Q),
+    (select(edge(From, To,ExistingExp), Q, _); ExistingExp = nil),!,
+    newRegex(FromExp, ToExp,LoopExp, ExistingExp, NewExp).
+
+beautifyAnd(lambda, lambda, lambda) :- !.
+beautifyAnd(lambda, Exp, Exp) :- !.
+beautifyAnd(Exp, lambda, Exp) :- !.
+beautifyAnd(Exp,Exp2,and(Exp, Exp2)).
+
+beautifyIter(lambda, lambda) :- !.
+beautifyIter(A, iter(A)).
