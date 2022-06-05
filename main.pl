@@ -52,7 +52,6 @@ regex2NFARecursive(Symbol, PrevNode, NewNode, Acc, Result) :-
 regex2NFA(Expression, Result) :-
     regex2NFARecursive(Expression, 0, _, [], Result), !.
 
-% Can be simplified using findall
 findInsOuts(Node, [], AccIn, AccOut, Node-AccIn-AccOut) :- !.
 findInsOuts(Node, [edge(From, To, _)|RestEdges], AccIn, AccOut, Result) :-
     From = Node, To \= Node, findInsOuts(Node, RestEdges, AccIn, [To|AccOut], Result), !.
