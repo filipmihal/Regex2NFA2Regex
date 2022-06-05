@@ -1,4 +1,4 @@
-# Regex<->NFA
+# Regex2NFA2Regex
 
 ## Regex format
 To simplify the parsing process, my script uses a Prolog friendly term-based regex format:
