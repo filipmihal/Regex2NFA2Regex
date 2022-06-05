@@ -1,20 +1,3 @@
-% REGEX format in Prolog
-% R+S = or(R,S)
-% RS = and(R,S)
-% R* = iter(R)
-
-% Regex example
-% (0+10)* = iter(or(0, and(1,0)))
-
-% λ-NFA format in Prolog
-% graph represented by a list of edges where each edge has following structure: 
-% edge(FromNode, ToNode, Symbol)
-% Last node (with the highest number) is the final state
-
-% λ-NFA example
-% iter(and(0, 1))
-% [edge(0, 1, lambda), edge(0, 4, lambda), edge(3, 4, lambda), edge(3, 1, lambda), edge(1, 2, 0), edge(2, 3, 1)]
-
 
 % regex2NFARecursive(+Expression, +PreviousNode, +-NewNode, +Accumulator, -Result)
 regex2NFARecursive(and(Expr1, Expr2), PrevNode, NewNode, Acc, Result) :-
@@ -77,6 +60,7 @@ cutNode(Edges, StartNode, _, Result) :-
     deleteEdges(Node, Pairs, Edges, StrippedEdges),
     append(StrippedEdges, NewEdges, Result).
 
+% nfa2Regex(+NFA, +StartNode, +FinishNode, -RegexExpression).
 nfa2Regex([edge(S,F,Exp)], S, F, Exp).
 nfa2Regex(Edges,S,F,Exp) :-
     cutNode(Edges,S,F,NewEdges),
