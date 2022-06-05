@@ -1,4 +1,3 @@
-
 % regex2NFARecursive(+Expression, +PreviousNode, +-NewNode, +Accumulator, -Result)
 regex2NFARecursive(and(Expr1, Expr2), PrevNode, NewNode, Acc, Result) :-
     regex2NFARecursive(Expr1, PrevNode, NewNodeMid, [], Result1),
@@ -65,14 +64,6 @@ nfa2Regex([edge(S,F,Exp)], S, F, Exp).
 nfa2Regex(Edges,S,F,Exp) :-
     cutNode(Edges,S,F,NewEdges),
     nfa2Regex(NewEdges, S,F,Exp).
-
-% NFA preconditions:
-% valid NFA
-% single input state
-% single final state
-% no unreachable states
-% nfa2Regex([edge(S,E,Regex)], S, E, Regex).
-% the order of edges in a list should not matter
 
 eachPairRev(_, [], []):- !.
 eachPairRev(Node, [A|Rest], [(Node,A)|Pairs]) :-
