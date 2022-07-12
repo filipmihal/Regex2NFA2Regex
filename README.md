@@ -61,5 +61,4 @@ Regex = or(a,and(x,y))
 ?- nfa2Regex([edge(0,1,lambda),edge(0,3,lambda),edge(1,3,a),edge(1,1,a)], 0,3,P).
 P = or(and(iter(a), a), lambda)
 
-
 ```
